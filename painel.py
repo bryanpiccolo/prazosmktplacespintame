@@ -234,10 +234,10 @@ const COR = {}; let iml = 0;
 canais.forEach(c => COR[c] = c==="Shopee" ? "--s2" : SLOTS_ML[Math.min(iml++, SLOTS_ML.length-1)]);
 const canaisML = canais.filter(c => c!=="Shopee");  // inclui "Mercado Livre" (modo sem login)
 $("mkts").textContent = canais.includes("Shopee") ? (canaisML.length ? "Mercado Livre e Shopee" : "Shopee") : "Mercado Livre";
-// Ordem por importância de vendas no e-commerce: regiões (Sudeste, Sul, Nordeste,
-// Centro-Oeste, Norte) e, dentro delas, estados do maior para o menor peso nas compras online.
+// Ordem por importância de vendas no e-commerce: regiões (Sudeste, Sul, Centro-Oeste,
+// Nordeste, Norte) e, dentro delas, estados do maior para o menor peso nas compras online.
 const REGIOES = [["Sudeste",["SP","MG","RJ","ES"]], ["Sul",["PR","RS","SC"]],
-  ["Nordeste",["BA","PE","CE","RN","PB","AL","MA","PI","SE"]], ["Centro-Oeste",["DF","GO","MT","MS"]],
+  ["Centro-Oeste",["DF","GO","MT","MS"]], ["Nordeste",["BA","PE","CE","RN","PB","AL","MA","PI","SE"]],
   ["Norte",["PA","AM","TO","RO","AC","AP","RR"]]];
 const POS = {}, REG = {}; let _p = 0;
 REGIOES.forEach(([r, us]) => us.forEach(u => { POS[u] = _p++; REG[u] = r; }));
