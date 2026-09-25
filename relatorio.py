@@ -53,9 +53,10 @@ def tabela(cab, linhas):
 
 
 def moldura(titulo, sub, corpo, url_painel=None):
-    botao = (f'<p style="margin:22px 0 4px"><a href="{e(url_painel)}" style="background:#2a78d6;color:#fff;'
-             f'text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;display:inline-block">'
-             f'Abrir o painel completo</a></p>') if url_painel else ""
+    botao = (f'<table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px 0 4px"><tr>'
+             f'<td bgcolor="#2a78d6" style="background-color:#2a78d6;border-radius:8px;padding:10px 18px">'
+             f'<a href="{e(url_painel)}" style="color:#ffffff;text-decoration:none;font-weight:600">'
+             f'Abrir o painel completo</a></td></tr></table>') if url_painel else ""
     return f"""<!doctype html><html><body style="margin:0;background:#f4f3ef;padding:24px 12px;
 font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#0b0b0b">
 <div style="max-width:720px;margin:0 auto;background:#fff;border:1px solid #e4e2dc;border-radius:14px;padding:26px 26px 20px">
