@@ -1,0 +1,48 @@
+{
+  "ml": {
+    "ativo": true,
+    "client_id": "",
+    "client_secret": "",
+    "redirect_uri": "https://www.google.com",
+    "anuncios": [
+      {
+        "id": "MLB5146553103",
+        "titulo": "Vestido Infantil Passarinho",
+        "modalidade": "ML"
+      }
+    ],
+    "anuncios_por_modalidade": 1,
+    "entregas_reais": false,
+    "paralelo": 4,
+    "entregas_no_email": false
+  },
+  "shopee": {
+    "ativo": false,
+    "loja_url": "https://shopee.com.br/NOME_DA_SUA_LOJA",
+    "anuncios": "auto",
+    "anuncios_por_loja": 2,
+    "pausa_segundos": [
+      2,
+      5
+    ],
+    "headless": true,
+    "navegador": "chrome",
+    "_nota": "Desligado: a Shopee não mostra prazo de entrega antes do checkout para envios pelos Correios (verificado em 25/09/2026). Ver README."
+  },
+  "painel_dias": 180,
+  "painel_publico": true,
+  "painel_url": "https://bryanpiccolo.github.io/prazosmktplacespintame/",
+  "email": {
+    "para": [
+      "comercial@pintame.com.br",
+      "vimuller5@gmail.com"
+    ]
+  },
+  "alertas": {
+    "dias_acima": 2,
+    "percentual_acima": 0.3,
+    "janela_dias": 28,
+    "minimo_dias": 7
+  },
+  "_nota": "Configuração usada no GitHub. Modo sem login: o ML é consultado pelo cálculo público de frete, para os anúncios listados em ml.anuncios. O painel público mostra só prazos. Os e-mails são enviados pelo agendamento no Claude (Gmail), não pelo GitHub."
+}

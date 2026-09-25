@@ -1,0 +1,55 @@
+uf,regiao,cidade,cep
+AC,capital,Rio Branco,69900-062
+AC,interior,Cruzeiro do Sul,69980-000
+AL,capital,Maceió,57020-050
+AL,interior,Arapiraca,57300-010
+AP,capital,Macapá,68900-073
+AP,interior,Oiapoque,68980-000
+AM,capital,Manaus,69005-010
+AM,interior,Parintins,69151-000
+BA,capital,Salvador,40140-110
+BA,interior,Porto Seguro,45810-000
+CE,capital,Fortaleza,60060-440
+CE,interior,Juazeiro do Norte,63010-010
+DF,capital,Brasília,70040-010
+DF,interior,Gama,72405-010
+ES,capital,Vitória,29050-335
+ES,interior,Cachoeiro de Itapemirim,29300-500
+GO,capital,Goiânia,74003-010
+GO,interior,Rio Verde,75901-010
+MA,capital,São Luís,65010-000
+MA,interior,Imperatriz,65900-010
+MT,capital,Cuiabá,78005-000
+MT,interior,Sinop,78550-001
+MS,capital,Campo Grande,79002-000
+MS,interior,Dourados,79804-000
+MG,capital,Belo Horizonte,30130-010
+MG,interior,Montes Claros,39400-001
+PA,capital,Belém,66010-000
+PA,interior,Santarém,68005-010
+PB,capital,João Pessoa,58013-000
+PB,interior,Campina Grande,58400-100
+PR,capital,Curitiba,80010-010
+PR,interior,Londrina,86010-010
+PE,capital,Recife,50030-230
+PE,interior,Petrolina,56302-000
+PI,capital,Teresina,64000-040
+PI,interior,Parnaíba,64200-100
+RJ,capital,Rio de Janeiro,20040-020
+RJ,interior,Campos dos Goytacazes,28010-010
+RN,capital,Natal,59025-000
+RN,interior,Mossoró,59600-010
+RS,capital,Porto Alegre,90010-150
+RS,interior,Santa Maria,97010-001
+RO,capital,Porto Velho,76801-059
+RO,interior,Ji-Paraná,76900-100
+RR,capital,Boa Vista,69301-110
+RR,interior,Rorainópolis,69373-000
+SC,capital,Florianópolis,88010-001
+SC,interior,Chapecó,89801-001
+SP,capital,São Paulo,01310-100
+SP,interior,Presidente Prudente,19010-000
+SE,capital,Aracaju,49010-020
+SE,interior,Lagarto,49400-001
+TO,capital,Palmas,77001-002
+TO,interior,Araguaína,77803-010
