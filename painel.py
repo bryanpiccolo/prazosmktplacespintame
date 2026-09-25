@@ -158,6 +158,7 @@ th .dot{margin-right:5px;vertical-align:-1px}
 .vazio{color:var(--ink2);padding:24px;text-align:center}
 .rodape{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.6}
 .sep{border-left:1px solid var(--line)}
+tr.reg td{padding:14px 8px 6px;font-size:11.5px;font-weight:650;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);border-top:none;text-align:left}
 </style>
 </head>
 <body>
@@ -184,7 +185,7 @@ th .dot{margin-right:5px;vertical-align:-1px}
 
 <section class="card">
   <h2>Prazo por estado</h2>
-  <p class="h2sub">Dias corridos entre a compra e a entrega prometida. Quanto mais escuro, mais demorado. ▲/▼ = variação em 7 dias. Clique no título de uma coluna para ordenar.</p>
+  <p class="h2sub">Dias corridos entre a compra e a entrega prometida. Quanto mais escuro, mais demorado. ▲/▼ = variação em 7 dias. Estados agrupados por região, na ordem de importância de vendas do e-commerce. Clique no título de uma coluna para ordenar.</p>
   <div class="tabela" id="t-uf"></div>
   <div class="leg" id="leg-heat"></div>
 </section>
@@ -233,7 +234,14 @@ const COR = {}; let iml = 0;
 canais.forEach(c => COR[c] = c==="Shopee" ? "--s2" : SLOTS_ML[Math.min(iml++, SLOTS_ML.length-1)]);
 const canaisML = canais.filter(c => c!=="Shopee");  // inclui "Mercado Livre" (modo sem login)
 $("mkts").textContent = canais.includes("Shopee") ? (canaisML.length ? "Mercado Livre e Shopee" : "Shopee") : "Mercado Livre";
-const UFS = [...new Set(D.prom.map(r=>r[2]))].sort();
+// Ordem por importância de vendas no e-commerce: regiões (Sudeste, Sul, Nordeste,
+// Centro-Oeste, Norte) e, dentro delas, estados do maior para o menor peso nas compras online.
+const REGIOES = [["Sudeste",["SP","MG","RJ","ES"]], ["Sul",["PR","RS","SC"]],
+  ["Nordeste",["BA","PE","CE","RN","PB","AL","MA","PI","SE"]], ["Centro-Oeste",["DF","GO","MT","MS"]],
+  ["Norte",["PA","AM","TO","RO","AC","AP","RR"]]];
+const POS = {}, REG = {}; let _p = 0;
+REGIOES.forEach(([r, us]) => us.forEach(u => { POS[u] = _p++; REG[u] = r; }));
+const UFS = [...new Set(D.prom.map(r=>r[2]))].sort((a,b) => (POS[a]??99) - (POS[b]??99) || a.localeCompare(b));
 
 // ---------- índice: data|canal|uf|regiao -> [dmin,dmax]
 const IDX = {}, DATAS = {};
@@ -345,14 +353,21 @@ function tabela(F){
     const e = entregas(F,u);
     return {u, vs, ds: canais.map(c=>delta(F,c,u)), melhor: ord[0], margem: ord.length>1 ? ord[1][0]-ord[0][0] : null, e};
   });
-  const chave = [r=>r.u, ...canais.map((c,i)=>r=>r.vs[i]??-1), r=>r.melhor?r.melhor[0]:99, r=>r.e.real??-1, r=>r.e.pct??2];
+  const chave = [r=>POS[r.u]??99, ...canais.map((c,i)=>r=>r.vs[i]??-1), r=>r.melhor?r.melhor[0]:99, r=>r.e.real??-1, r=>r.e.pct??2];
   linhas.sort((a,b) => { const k=chave[ordem.col]||chave[0], x=k(a), y=k(b); return (x<y?-1:x>y?1:0)*(ordem.asc?1:-1); });
-  const cab = ["Estado", ...canais.map(nomeCanal), "Mais rápido", ...(temEnt?["Real ML*","No prazo*"]:[])];
+  const comp = canais.length > 1;   // "Mais rápido" só faz sentido com mais de um canal
+  const cab = ["Estado (por região)", ...canais.map(nomeCanal), ...(comp?["Mais rápido"]:[]), ...(temEnt?["Real ML*","No prazo*"]:[])];
   let h = `<table><thead><tr>${cab.map((t,i)=>`<th data-col="${i}" class="${i===canais.length+1?"sep":""}">${t}${ordem.col===i?(ordem.asc?" ↑":" ↓"):""}</th>`).join("")}</tr></thead><tbody>`;
+  const agrupar = ordem.col === 0 && ordem.asc;
+  let regAtual = null;
   linhas.forEach(r => {
+    if (agrupar && REG[r.u] !== regAtual){
+      regAtual = REG[r.u];
+      h += `<tr class="reg"><td colspan="${cab.length}">${esc(regAtual || "Outros")}</td></tr>`;
+    }
     h += `<tr><td><b>${r.u}</b></td>` + r.vs.map((v,i) => { if (v==null) return "<td>–</td>";
       const b = bin(v); return `<td><span class="cel" style="background:var(${RAMP[b]});color:${b>=3?"#fff":"#0b0b0b"}">${num(v)}</span><span class="d">${seta(r.ds[i])}</span></td>`; }).join("");
-    h += `<td class="sep">${r.melhor ? (r.margem!=null&&r.margem<0.5 ? `<span style="color:var(--ink2)">empate</span>` : `${nomeCanal(r.melhor[1])}${r.margem!=null?` <span style="color:var(--ink2)">(${num(r.margem)} d à frente)</span>`:""}`) : "–"}</td>`;
+    if (comp) h += `<td class="sep">${r.melhor ? (r.margem!=null&&r.margem<0.5 ? `<span style="color:var(--ink2)">empate</span>` : `${nomeCanal(r.melhor[1])}${r.margem!=null?` <span style="color:var(--ink2)">(${num(r.margem)} d à frente)</span>`:""}`) : "–"}</td>`;
     if (temEnt) h += `<td>${r.e.real!=null?num(r.e.real):"–"}</td><td>${r.e.pct!=null?`<span class="${r.e.pct<0.85?"piora":""}">${r.e.pct<0.85?"⚠ ":""}${Math.round(r.e.pct*100)}%</span>${PUB||r.e.nP==null?"":` <span style="color:var(--muted)">(${r.e.nP})</span>`}`:"–"}</td>`;
     h += "</tr>";
   });
