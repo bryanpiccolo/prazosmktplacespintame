@@ -143,6 +143,13 @@ def cmd_coletar(args):
         except BaseException as e:  # noqa: BLE001
             falhou = True
             log(f"Shopee: ERRO — {e}" + _detalhe(e))
+    if args.so in (None, "site") and cfg.get("site", {}).get("ativo", False):
+        try:
+            import loja_site
+            loja_site.coletar(cfg, ceps, salvar, log, hoje, args.limite)
+        except BaseException as e:  # noqa: BLE001
+            falhou = True
+            log(f"Site: ERRO — {e}" + _detalhe(e))
     painel.gerar(conn, PAINEL, cfg.get("painel_dias", 180), publico=cfg.get("painel_publico", False))
     log(f"Painel atualizado: {PAINEL}")
     if args.abrir:
@@ -239,7 +246,7 @@ def main():
     p.add_argument("link", help="link de um anúncio seu na Shopee")
     p.set_defaults(fn=cmd_calibrar_shopee)
     p = sub.add_parser("coletar")
-    p.add_argument("--so", choices=["ml", "shopee"])
+    p.add_argument("--so", choices=["ml", "shopee", "site"])
     p.add_argument("--limite", type=int, help="só os N primeiros anúncios (bom para testar)")
     p.add_argument("--abrir", action="store_true", help="abre o painel no fim")
     p.set_defaults(fn=cmd_coletar)

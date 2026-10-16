@@ -5,12 +5,12 @@ import statistics
 SQL_DIARIO = """
 WITH por_anuncio AS (      -- opção exibida ao comprador, por anúncio/CEP/dia
   SELECT data, marketplace,
-         COALESCE(modalidade, CASE marketplace WHEN 'ml' THEN 'ML' ELSE 'Shopee' END) AS modalidade,
+         COALESCE(modalidade, CASE marketplace WHEN 'ml' THEN 'ML' WHEN 'site' THEN 'Site' ELSE 'Shopee' END) AS modalidade,
          anuncio_id, uf, regiao, MIN(dias_min) AS dmin, MIN(dias_max) AS dmax, MIN(frete) AS frete
   FROM consultas WHERE status = 'ok' AND data BETWEEN ? AND ?
   GROUP BY 1,2,3,4,5,6
 )
-SELECT data, CASE WHEN marketplace = 'shopee' THEN 'Shopee' WHEN modalidade = 'ML' THEN 'Mercado Livre'
+SELECT data, CASE WHEN marketplace = 'shopee' THEN 'Shopee' WHEN marketplace = 'site' THEN modalidade WHEN modalidade = 'ML' THEN 'Mercado Livre'
             ELSE 'ML · ' || modalidade END AS canal,
        uf, regiao, AVG(dmin), AVG(dmax), AVG(frete)
 FROM por_anuncio GROUP BY 1,2,3,4 ORDER BY 1
@@ -33,6 +33,8 @@ def ordenar_canais(canais):
     def k(c):
         if c == "Shopee":
             return (99, c)
+        if c.startswith("Site"):
+            return (90 + (c != "Site"), c)
         if c == "Mercado Livre":
             return (0, c)
         m = c.replace("ML · ", "")

@@ -29,6 +29,14 @@
     "navegador": "chrome",
     "_nota": "Desligado: a Shopee não mostra prazo de entrega antes do checkout para envios pelos Correios (verificado em 25/09/2026). Ver README."
   },
+  "site": {
+    "ativo": true,
+    "loja": "https://www.pintame.com.br",
+    "produto": "vestido-voa-passarinho",
+    "titulo": "Vestido Voa Passarinho (site)",
+    "pausa_segundos": 0.7,
+    "_nota": "Calculo de frete do carrinho da loja Shopify. Grava a opcao mais barata (Site) e a mais rapida (Site · expresso)."
+  },
   "painel_dias": 180,
   "painel_publico": true,
   "painel_url": "https://bryanpiccolo.github.io/prazosmktplacespintame/",
@@ -44,5 +52,5 @@
     "janela_dias": 28,
     "minimo_dias": 7
   },
-  "_nota": "Configuração usada no GitHub. Modo sem login: o ML é consultado pelo cálculo público de frete, para os anúncios listados em ml.anuncios. O painel público mostra só prazos. Os e-mails são enviados pelo agendamento no Claude (Gmail), não pelo GitHub."
+  "_nota": "Configuração usada no GitHub. Modo sem login: o ML é consultado pelo cálculo público de frete, para os anúncios listados em ml.anuncios. O site é consultado pelo cálculo de frete do carrinho da loja. O painel público mostra só prazos. Os e-mails são enviados pelo agendamento no Claude (Gmail), não pelo GitHub."
 }

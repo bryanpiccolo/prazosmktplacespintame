@@ -9,12 +9,12 @@ CDN = '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.
 
 SQL_PROMETIDO = """
 WITH por_anuncio AS (      -- opção exibida ao comprador, por anúncio/CEP/dia
-  SELECT data, marketplace, COALESCE(modalidade, CASE marketplace WHEN 'ml' THEN 'ML' ELSE 'Shopee' END) AS modalidade,
+  SELECT data, marketplace, COALESCE(modalidade, CASE marketplace WHEN 'ml' THEN 'ML' WHEN 'site' THEN 'Site' ELSE 'Shopee' END) AS modalidade,
          anuncio_id, uf, regiao, MIN(dias_min) AS dmin, MIN(dias_max) AS dmax
   FROM consultas WHERE status = 'ok' AND data >= ?
   GROUP BY 1,2,3,4,5,6
 )
-SELECT data, CASE WHEN marketplace = 'shopee' THEN 'Shopee' WHEN modalidade = 'ML' THEN 'Mercado Livre'
+SELECT data, CASE WHEN marketplace = 'shopee' THEN 'Shopee' WHEN marketplace = 'site' THEN modalidade WHEN modalidade = 'ML' THEN 'Mercado Livre'
             ELSE 'ML · ' || modalidade END AS canal,
        uf, regiao, ROUND(AVG(dmin), 2), ROUND(AVG(dmax), 2)
 FROM por_anuncio GROUP BY 1,2,3,4 ORDER BY 1
@@ -227,15 +227,17 @@ $("gerado").textContent = D.gerado;
 
 // ---------- canais (cor fixa por canal, nunca por posição)
 const ORDEM_ML = ["Full","Coleta","Agência","Correios","Flex","Frete próprio","ML"];
-const SLOTS_ML = ["--s1","--s3","--s4","--s5","--s6"];
+const SLOTS_ML = ["--s1","--s3","--s6"];
 const canais = [...new Set(D.prom.map(r=>r[1]))].sort((a,b) => {
-  const k = c => c==="Shopee" ? 99 : c==="Mercado Livre" ? 0 : (ORDEM_ML.indexOf(c.replace("ML · ",""))+1 || 50);
+  const k = c => c==="Shopee" ? 99 : c==="Site" ? 90 : c.startsWith("Site") ? 91 : c==="Mercado Livre" ? 0 : (ORDEM_ML.indexOf(c.replace("ML · ",""))+1 || 50);
   return k(a)-k(b) || a.localeCompare(b);
 });
 const COR = {}; let iml = 0;
-canais.forEach(c => COR[c] = c==="Shopee" ? "--s2" : SLOTS_ML[Math.min(iml++, SLOTS_ML.length-1)]);
-const canaisML = canais.filter(c => c!=="Shopee");  // inclui "Mercado Livre" (modo sem login)
-$("mkts").textContent = canais.includes("Shopee") ? (canaisML.length ? "Mercado Livre e Shopee" : "Shopee") : "Mercado Livre";
+const ehSite = c => c.startsWith("Site");
+canais.forEach(c => COR[c] = c==="Shopee" ? "--s2" : c==="Site" ? "--s4" : ehSite(c) ? "--s5" : SLOTS_ML[Math.min(iml++, SLOTS_ML.length-1)]);
+const canaisML = canais.filter(c => c!=="Shopee" && !ehSite(c));  // inclui "Mercado Livre" (modo sem login)
+const canaisSite = canais.filter(ehSite);
+$("mkts").textContent = [canaisML.length&&"Mercado Livre", canais.includes("Shopee")&&"Shopee", canaisSite.length&&"site"].filter(Boolean).join(", ").replace(/, ([^,]*)$/, " e $1");
 // Ordem por importância de vendas no e-commerce: regiões (Sudeste, Sul, Centro-Oeste,
 // Nordeste, Norte) e, dentro delas, estados do maior para o menor peso nas compras online.
 const REGIOES = [["Sudeste",["SP","MG","RJ","ES"]], ["Sul",["PR","RS","SC"]],
@@ -323,6 +325,23 @@ function insights(F){
     if (t.length) add("", (t.join("; ")).replace(/^o /,"O ") + ". Onde um canal é bem mais lento, vale reforçar o outro nos anúncios e campanhas.");
     else add("", "Mercado Livre e Shopee prometem prazos parecidos (menos de 1 dia de diferença) em todos os estados.");
   }
+  // 3b. ML x site
+  if (canaisML.length && canaisSite.length){
+    const cmp = (cs) => { let a=[], b=[];
+      UFS.forEach(u => { const m = Math.min(...canaisML.map(c=>agora(F,c,u)??Infinity)), s = agora(F,cs,u);
+        if (isFinite(m) && s!=null){ if (s-m>=1) a.push([s-m,u]); else if (m-s>=1) b.push([m-s,u]); } });
+      a.sort((x,y)=>y[0]-x[0]); b.sort((x,y)=>y[0]-x[0]); return [a,b]; };
+    const [mlMelhor, siteMelhor] = cmp("Site");
+    const t = [];
+    if (mlMelhor.length) t.push(`o <b>Mercado Livre</b> promete pelo menos 1 dia a menos que o frete mais barato do site em <b>${mlMelhor.length} estado${mlMelhor.length>1?"s":""}</b> (maior diferença: ${mlMelhor[0][1]}, ${num(mlMelhor[0][0])} dias)`);
+    if (siteMelhor.length) t.push(`o <b>site</b> é mais rápido em <b>${siteMelhor.length}</b> (${siteMelhor.slice(0,4).map(x=>x[1]).join(", ")})`);
+    const exp = canaisSite.find(c=>c!=="Site");
+    let e = "";
+    if (exp){ const g = media(UFS.map(u => { const a=agora(F,"Site",u), b=agora(F,exp,u); return a==null||b==null?null:a-b; }));
+      if (g!=null && g>=0.5) e = ` No site, o frete expresso encurta em média <b>${num(g)} dias</b> em relação ao mais barato.`; }
+    if (t.length) add("", (t.join("; ")).replace(/^o /,"O ") + "." + e);
+    else add("", "Mercado Livre e o frete mais barato do site prometem prazos parecidos (menos de 1 dia de diferença) em todos os estados." + e);
+  }
   // 4. Full x demais modalidades
   const full = canaisML.find(c=>c.endsWith("Full")), outra = canaisML.find(c=>!c.endsWith("Full"));
   if (full && outra){
@@ -408,10 +427,10 @@ function graficos(F){
 }
 
 function rodape(){
-  const nome = {ml:"Mercado Livre", shopee:"Shopee"};
+  const nome = {ml:"Mercado Livre", shopee:"Shopee", site:"Site"};
   $("rodape").innerHTML = "Última coleta: " + (D.saude.map(([m,d,ok,t]) => `${nome[m]||m} em ${fmt(d)} — ${ok} de ${t} consultas com prazo`).join(" · ") || "nenhuma") +
     "<br>Cada canal é medido em anúncios representativos (os mais vendidos de cada modalidade de envio), simulando entrega para uma capital e uma cidade do interior de cada estado. " +
-    "O prazo considerado é o da opção de frete que o marketplace exibe ao comprador.";
+    "O prazo considerado é o da opção de frete que o marketplace exibe ao comprador. No site, \"Site\" é a opção de frete mais barata do carrinho e \"Site · expresso\" a mais rápida, com saída de Florianópolis; prazos em dias úteis foram convertidos para dias corridos.";
 }
 
 function mensal(){

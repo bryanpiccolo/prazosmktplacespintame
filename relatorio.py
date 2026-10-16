@@ -79,7 +79,8 @@ def enviar(cfg, assunto, texto, log, teste=False, destino=None, nome="email"):
     return True
 
 
-RODAPE = ("\n--\nPrazo prometido e o prazo exibido ao comprador no anuncio, em dias corridos, para uma capital "
+RODAPE = ("\n--\nPrazo prometido e o prazo exibido ao comprador no anuncio do Mercado Livre e no carrinho do site "
+          "(Site = frete mais barato, Site expresso = frete mais rapido), saindo de Florianopolis, em dias corridos, para uma capital "
           "e uma cidade do interior de cada estado. Graficos e historico completo no painel de prazos. "
           "Enviado automaticamente pelo monitor de prazos da Pinta Me Mais.\n")
 
@@ -143,7 +144,7 @@ def _casos(conn, cfg, dia, cid):
     falhas = conn.execute("""SELECT marketplace, COALESCE(modalidade,''), uf, regiao FROM consultas
                              WHERE data = ? GROUP BY 1,2,3,4 HAVING MAX(status = 'ok') = 0""", (dia.isoformat(),)).fetchall()
     for mk, mod, u, rg in falhas:
-        c = "Shopee" if mk == "shopee" else ("Mercado Livre" if mod in ("", "ML") else f"ML - {mod}")
+        c = "Shopee" if mk == "shopee" else (mod or "Site") if mk == "site" else ("Mercado Livre" if mod in ("", "ML") else f"ML · {mod}")
         if (c, u, rg) in normal and (c, u, rg) not in presentes:
             casos.append(("sem", f"sem|{c}|{u}|{rg}",
                           f"{_local(cid, u, rg)} - {c} - sem opcao de entrega hoje - normal {n1(normal[(c, u, rg)]['dias'])} dias"))
@@ -158,7 +159,7 @@ def alertas(conn, cfg, hoje, log, teste=False, destino=None):
     recentes = {x[1] for k in (1, 2, 3) for x in _casos(conn, cfg, hoje - dt.timedelta(days=k), cid)}
     novos = [x for x in casos if x[1] not in recentes]
 
-    ativos = [m for m in ("ml", "shopee") if cfg.get(m, {}).get("ativo", m == "ml")]
+    ativos = [m for m in ("ml", "shopee", "site") if cfg.get(m, {}).get("ativo", m == "ml")]
     ok_hoje = {r[0] for r in conn.execute("SELECT DISTINCT marketplace FROM consultas WHERE data = ? AND status = 'ok'",
                                           (hoje.isoformat(),))}
     coleta_falhou = [m for m in ativos if m not in ok_hoje]
@@ -168,7 +169,7 @@ def alertas(conn, cfg, hoje, log, teste=False, destino=None):
 
     corpo, resumo = [f"Prazos de entrega fora do normal - coleta de {DIAS_SEMANA[hoje.weekday()]} {hoje:%d/%m/%Y}"], []
     if coleta_falhou:
-        nomes = " e ".join({"ml": "Mercado Livre", "shopee": "Shopee"}[m] for m in coleta_falhou)
+        nomes = " e ".join({"ml": "Mercado Livre", "shopee": "Shopee", "site": "site"}[m] for m in coleta_falhou)
         corpo.append(f"\nATENCAO - a coleta de hoje nao trouxe dados de {nomes}. "
                      "O motivo aparece na aba Actions do repositorio no GitHub.")
         resumo.append(f"coleta sem dados de {nomes}")
@@ -211,7 +212,7 @@ def semanal(conn, cfg, hoje, log, teste=False, destino=None):
         return sum(vals) / len(vals) if vals else None
 
     corpo = [f"Resumo dos prazos de entrega - semana {s1:%d/%m} a {s2:%d/%m}",
-             f"Mercado Livre{' e Shopee' if cfg.get('shopee', {}).get('ativo') else ''} - enviado em {hoje:%d/%m/%Y}"]
+             " e ".join(n for n, on in (("Mercado Livre", True), ("Shopee", cfg.get("shopee", {}).get("ativo")), ("site", cfg.get("site", {}).get("ativo"))) if on) + f" - enviado em {hoje:%d/%m/%Y}"]
 
     # ---- destaques
     dest = []
@@ -242,7 +243,7 @@ def semanal(conn, cfg, hoje, log, teste=False, destino=None):
     if pioras:
         dest.append("Maiores altas de prazo na semana - " + ", ".join(
             f"{u} mais {n1(d)} dias" + (f" ({c})" if len(canais) > 1 else "") for d, u, c in pioras[:5]))
-    for c, lst in M.frete_pago(sem["linhas"]).items():
+    for c, lst in M.frete_pago([r for r in sem["linhas"] if not r[1].startswith("Site")]).items():
         dest.append(f"{c} - frete pago pelo comprador em {len(lst)} dos 54 destinos - " +
                     ", ".join(f"{u} {rg}" for u, rg, _ in lst[:6]) + (" e outros" if len(lst) > 6 else ""))
     corpo.append(titulo("Destaques") + "\n\n".join(dest or ["Ainda nao ha dados suficientes para a semana."]))
