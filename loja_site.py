@@ -45,8 +45,23 @@ class Loja:
         self.s = requests.Session()
         self.s.headers.update({"User-Agent": UA, "Accept": "application/json"})
 
+    def req(self, metodo, caminho, **kw):
+        """Requisicao com nova tentativa: a Shopify responde 429 (muitas requisicoes)
+        para os servidores do GitHub de vez em quando; esperar e tentar de novo resolve."""
+        kw.setdefault("timeout", 45)
+        for tentativa in range(7):
+            r = self.s.request(metodo, f"{self.base}{caminho}", **kw)
+            if r.status_code not in (429, 500, 502, 503, 504):
+                return r
+            try:
+                espera = float(r.headers.get("Retry-After") or 0)
+            except ValueError:
+                espera = 0
+            time.sleep(min(max(espera, 10 * (tentativa + 1)), 90))
+        return r
+
     def produto(self, handle, variante=None):
-        p = self.s.get(f"{self.base}/products/{handle}.js", timeout=30)
+        p = self.req("GET", f"/products/{handle}.js")
         p.raise_for_status()
         p = p.json()
         vs = p["variants"]
@@ -55,20 +70,20 @@ class Loja:
         return p, v
 
     def carrinho(self, variante_id):
-        self.s.post(f"{self.base}/cart/clear.js", timeout=30)
-        r = self.s.post(f"{self.base}/cart/add.js", json={"items": [{"id": variante_id, "quantity": 1}]}, timeout=30)
+        self.req("POST", "/cart/clear.js")
+        r = self.req("POST", "/cart/add.js", json={"items": [{"id": variante_id, "quantity": 1}]})
         r.raise_for_status()
 
     def fretes(self, cep, uf):
         q = {"shipping_address[zip]": cep, "shipping_address[country]": "Brazil", "shipping_address[province]": uf}
-        r = self.s.get(f"{self.base}/cart/shipping_rates.json", params=q, timeout=45)
+        r = self.req("GET", "/cart/shipping_rates.json", params=q)
         if r.status_code == 200 and (r.json().get("shipping_rates")):
             return r.json()["shipping_rates"]
         # fretes de transportadora as vezes vem em modo assincrono
-        self.s.post(f"{self.base}/cart/prepare_shipping_rates.json", params=q, timeout=45)
+        self.req("POST", "/cart/prepare_shipping_rates.json", params=q)
         for _ in range(10):
             time.sleep(1.5)
-            a = self.s.get(f"{self.base}/cart/async_shipping_rates.json", params=q, timeout=45)
+            a = self.req("GET", "/cart/async_shipping_rates.json", params=q)
             if a.status_code == 200 and a.text not in ("", "null"):
                 return (a.json() or {}).get("shipping_rates") or []
         if r.status_code != 200:

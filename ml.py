@@ -147,7 +147,7 @@ class ClienteML:
                     if self.tok["access_token"] == usado:
                         self._renovar()
                 continue
-            if r.status_code in (429, 500, 502, 503, 504):
+            if r.status_code in (424, 429, 500, 502, 503, 504):  # 424: falha momentanea do frete
                 time.sleep(2 ** tentativa + random.random())
                 continue
             r.raise_for_status()
@@ -212,7 +212,7 @@ class ClientePublico:
         for tentativa in range(5):
             r = self.s.get(API + caminho, params=params, headers=headers, timeout=30)
             ultimo = r
-            if r.status_code in (429, 500, 502, 503, 504):
+            if r.status_code in (424, 429, 500, 502, 503, 504):  # 424: falha momentanea do frete
                 time.sleep(2 ** tentativa + random.random())
                 continue
             r.raise_for_status()

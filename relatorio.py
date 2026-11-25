@@ -142,7 +142,8 @@ def _casos(conn, cfg, dia, cid):
                           f"{_local(cid, u, rg)} - {c} - frete hoje {n1(fr)} reais - normalmente gratis"))
     presentes = {(r[1], r[2], r[3]) for r in linhas}
     falhas = conn.execute("""SELECT marketplace, COALESCE(modalidade,''), uf, regiao FROM consultas
-                             WHERE data = ? GROUP BY 1,2,3,4 HAVING MAX(status = 'ok') = 0""", (dia.isoformat(),)).fetchall()
+                             WHERE data = ? GROUP BY 1,2,3,4
+                             HAVING MAX(status = 'ok') = 0 AND MAX(status = 'indisponivel') = 1""", (dia.isoformat(),)).fetchall()
     for mk, mod, u, rg in falhas:
         c = "Shopee" if mk == "shopee" else (mod or "Site") if mk == "site" else ("Mercado Livre" if mod in ("", "ML") else f"ML · {mod}")
         if (c, u, rg) in normal and (c, u, rg) not in presentes:
